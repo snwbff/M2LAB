@@ -37,12 +37,18 @@ const inputsCharLength = computed(() => {
 const rangeMin = shallowRef(props.modelValue[0] || props.minValue)
 const rangeMax = shallowRef(props.modelValue[1] || props.maxValue)
 
+const rangeMinVisible = shallowRef(false)
+const rangeMaxVisible = shallowRef(false)
+
 function updateFirstRange(value) {
   const normalizedValue = Number(rangeMax.value) - rangePercent.value * 6
 
   const condition = Number(value) >= Number(rangeMax.value) - props.stepValue * 6
 
   rangeMin.value = inputMin.value = condition ? normalizedValue : value
+
+  rangeMinVisible.value = condition ? true : false
+  setTimeout(rangeMinVisible.value = false, 100)
 }
 
 function updateSecondRange(value) {
@@ -51,6 +57,9 @@ function updateSecondRange(value) {
   const condition = Number(value) <= Number(rangeMin.value) + props.stepValue * 6
 
   rangeMax.value = inputMax.value = condition ? normalizedValue : value
+
+  rangeMaxVisible.value = condition ? true : false
+  setTimeout(rangeMaxVisible.value = false, 100)
 }
 
 function cleaningWhitespace(value) {
@@ -67,6 +76,15 @@ const inputMax = shallowRef(props.modelValue[1] || props.maxValue)
 function validateValue(value) {
   return props.maxValue >= value && props.minValue <= value
 }
+let delayTime
+const debounceListener = (func,args) => {
+  if (!!delayTime) {
+    clearTimeout(delayTime)
+  }
+  delayTime = window.setTimeout(() => {
+    func(args)
+  }, 500)
+}
 
 function updateInputs(event) {
   const clearValue = cleaningWhitespace(event.target.value)
@@ -76,11 +94,21 @@ function updateInputs(event) {
   if (event.target.classList.contains('range-slider__input_1')) {
     const formatedMinInput = condition ? clearValue : props.minValue
 
-    inputMin.value = rangeMin.value = formatedMinInput
+    if(clearValue < rangeMax.value) {
+      console.log(rangeMax.value);
+      inputMin.value = rangeMin.value = formatedMinInput
+    } else {
+      inputMin.value = rangeMin.value
+    }
+
   } else {
     const formatedMaxInput = condition ? clearValue : props.maxValue
 
-    inputMax.value = rangeMax.value = formatedMaxInput
+    if(clearValue > rangeMin.value) {
+      inputMax.value = rangeMax.value = formatedMaxInput
+    } else {
+      inputMax.value = rangeMax.value
+    }
   }
   emit('update:modelValue', [inputMin.value, inputMax.value])
 }
@@ -105,6 +133,7 @@ function updateInputs(event) {
         :value="rangeMin"
         @input="updateFirstRange($event.target.value)"
         @change="$emit('update:modelValue', [rangeMin, rangeMax])"
+        :style="{ display: rangeMinVisible ? 'none' : 'block'  }"
       />
       <input
         class="range-slider__range range-slider__range_2"
@@ -115,6 +144,7 @@ function updateInputs(event) {
         :value="rangeMax"
         @input="updateSecondRange($event.target.value)"
         @change="$emit('update:modelValue', [rangeMin, rangeMax])"
+        :style="{ display: rangeMaxVisible ? 'none' : 'block'  }"
       />
       <div
         class="range-slider__current-range"
@@ -133,8 +163,7 @@ function updateInputs(event) {
           placeholder="Min"
           :maxlength="inputsCharLength"
           :value="formatValue(inputMin)"
-          @input="inputMin = $event.target.value"
-          @change="updateInputs($event)"
+          @input="debounceListener(updateInputs,$event),(inputMin = $event.target.value)"
         />
       </div>
 
@@ -147,8 +176,7 @@ function updateInputs(event) {
           placeholder="Max"
           :maxlength="inputsCharLength"
           :value="formatValue(inputMax)"
-          @input="inputMax = $event.target.value"
-          @change="updateInputs($event)"
+          @input="debounceListener(updateInputs,$event),(inputMax = $event.target.value)"
         />
       </div>
     </div>
@@ -166,7 +194,7 @@ function updateInputs(event) {
   display: flex;
 }
 .range-slider__symbol {
-  padding: 9px 10px 13px 0;
+  padding: 11px 10px 9px 0;
   border-right: 1px solid var(--border-color);
 }
 .range-slider__input-area {
@@ -203,6 +231,7 @@ input[type='range'] {
   width: 100%;
   position: absolute;
   bottom: -1px;
+  outline: none;
 }
 
 input[type='range']::-webkit-slider-thumb {
@@ -217,6 +246,10 @@ input[type='range']::-webkit-slider-thumb {
   cursor: pointer;
 }
 input[type='range']::-webkit-slider-thumb:active {
+  height: 15px;
+  width: 15px;
+}
+input[type='range']::-webkit-slider-thumb:focus {
   height: 15px;
   width: 15px;
 }
@@ -237,6 +270,10 @@ input[type='range']::-ms-thumb:active {
   height: 15px;
   width: 15px;
 }
+input[type='range']::-ms-thumb:focus {
+  height: 15px;
+  width: 15px;
+}
 
 input[type='range']::-moz-range-thumb {
   -webkit-appearance: none;
@@ -254,7 +291,10 @@ input[type='range']::-moz-range-thumb:active {
   height: 15px;
   width: 15px;
 }
-
+input[type='range']::-moz-range-thumb:focus {
+  height: 15px;
+  width: 15px;
+}
 .range-slider__input {
   background-color: transparent;
   border: none;

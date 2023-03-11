@@ -81,7 +81,7 @@ function updateCheckBox() {
   content: '';
   position: absolute;
   top: 47%;
-  left: 48%;
+  left: 50%;
   width: 40%;
   height: 60%;
   box-sizing: border-box;
